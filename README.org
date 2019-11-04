@@ -1,10 +1,97 @@
-* CASPASES
-** Get info
-   - asdfasdf
-   - asdfjl;kj
-   - a;ljkkj
+#+TITLE:     Cleavage site searching pipeline
+#+AUTHOR:    Max Pyatkob
 
-** asdfasd
-*** TODO asdfl;jkljaklsjdf1
-*** TODO asdfl;jkljaklsjdf2  
-*** TODO asdfl;jkljaklsjdf3
+This document provides some notes about how I obtain tables and create figures for caspase cleavage sites research
+
+#+EMAIL:     test@test.com
+
+#+DESCRIPTION: This document catalogs a set of tips and tricks for composing documents in Org mode.
+
+#+DESCRIPTION: This document catalogs a set of scripts which allow to everyone reproduce this research
+
+#+KEYWORDS:  caspases, n-rule, cleavage sites, apoptosis
+#+LANGUAGE:  en
+#+OPTIONS:   H:4
+#+OPTIONS:   num:nil
+#+OPTIONS:   toc:2
+#+OPTIONS:   p:t
+
+* Preparing databases and software
+** Software
+
+   Part information was obtained from this link [[   https://bioinf.shenwei.me/taxonkit/tutorial/#making-nr-blastdb-for-specific-taxids][link]]
+   
+   Main software which I used:
+   - [[ https://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/LATEST/ncbi-blast-2.9.0+-x64-linux.tar.gz][NCBI BLAST+]]
+   - [[https://github.com/shenwei356/csvtk/releases/download/v0.18.2/csvtk_linux_amd64.tar.gz][CSVTK]]
+   - [[https://github.com/shenwei356/seqkit/releases/download/v0.10.2/seqkit_linux_amd64.tar.gz][SEQKIT]]
+   - pigz was installed using apt
+   - all soft have links in ~/bin
+
+** Download and prepare NR database, obtain subset of Vertebrates
+  - Download last NR (non-redundant) database (not in one FASTA file, because headers don't presented very well in FASTA)
+  ```
+  wget -c 'https://ftp.ncbi.nlm.nih.gov/blast/db/v5/nr_v5.*.tar.gz'
+  ```
+
+  -- Unpack all files to big prepared nr database
+  ```
+  cat nr.*.tar.gz | tar -zxvi -f - -C .
+  ```
+
+  Extracting vertebrates subset
+  1. extract all taxids which related to Vertebrates
+      Note. Actually you can use taxonkit to extract taxids
+  example:
+  ```
+  mkdir -p ~/.taxonkit
+  wget -c ftp://ftp.ncbi.nih.gov/pub/taxonomy/taxdump.tar.gz
+  tar -zxvf taxdump.tar.gz
+  ln -s `realpath ./taxdump/names.dmp` ~/.taxonkit/names.dmp
+  ln -s `realpath ./taxdump/nodes.dmp` ~/.taxonkit/nodes.dmp
+  taxonkit list --ids 7742 --indent "" > 7742.txt
+  ```
+
+  But also you can use entrez which slightly faster
+  install entrez for get_species_taxids.sh
+  install directory ./edirect
+  cd ~
+  /bin/bash perl -MNet::FTP -e '$ftp = new Net::FTP("ftp.ncbi.nlm.nih.gov", Passive => 1); $ftp->login; $ftp->binary; $ftp->get("/entrez/entrezdirect/edirect.tar.gz");'
+  gunzip -c edirect.tar.gz | tar xf -
+  rm edirect.tar.gz
+  builtin exit
+  export PATH=$PATH:$HOME/edirect
+  ./edirect/setup.sh
+
+  ## https://ftp.ncbi.nlm.nih.gov/blast/db/v5/blastdbv5.pdf
+  ## extract Vertebrates subset (7742)
+  # get_species_taxids.sh -n Vertebrates
+  get_species_taxids.sh -t 7742 > 7742.txid
+
+
+  2. convert prepared database to FASTA subset
+  time blastdbcmd -db nr_v5 -dbtype prot -entry all -outfmt "%f" -out - | pigz -c > nr.fa.gz
+  ## download and extract accession numbers which associated with Vertebrates
+  wget -c ftp://ftp.ncbi.nih.gov/pub/taxonomy/accession2taxid/prot.accession2taxid.gz
+  pigz -dc prot.accession2taxid.gz \
+      | csvtk grep -t -f taxid -P 7742.txids \
+      | csvtk cut -t -f accession.version \
+      | sed 1d \
+  > 7742.acc
+
+  ## Represent FASTA: header[org1][org2]seq --> header[org1]seq\nheader[org2]seq
+  ## subset contains only vertebrates
+  time cat <(echo) <(pigz -dc nr.fa.gz) \
+      | perl -e 'BEGIN{ $/ = "\n>"; <>; } while(<>){s/>$//;  $i = index $_, "\n"; $h = substr $_, 0, $i; $s = substr $_, $i+1; if ($h !~ />/) { print ">$_"; next; }; $h = ">$h"; while($h =~ />([^ ]+ .+?) ?(?=>|$)/g){ $h1 = $1; $h1 =~ s/^\W+//; print ">$h1\n$s";} } ' \
+  | seqkit grep --delete-matched -f 7742.acc -o nr.7742.fa.gz
+
+  ## Create final BLAST db which contains only vertebrates
+  pigz -dc nr.7742.fa.gz > nr.7742.fa
+  time makeblastdb -parse_seqids -in nr.7742.fa -dbtype prot -out nr.7742 -max_file_sz 3000000000
+  rm nr.7742.fa
+
+  # export BLASTDB=/srv/BLASTDB/NR_7742/
+  # where test.sites -- query for blast
+  export BLASTDB=`pwd`
+  time blastp -db nr.7742 -query ./test.sites -outfmt "6 qaccver saccver stitle evalue score pident qseq sseq" -out test10-1.tsv -num_alignments 8000 -num_threads 8 -evalue 1e-16
+#+END_SRCg
