@@ -87,8 +87,9 @@ This document provides some notes about how I obtain tables and create figures f
   - Convert prepared database to FASTA subset
   #+BEGIN_SRC shell
   
-  ## strange step, converting nr to fasta. Why do not use FASTA from NCBI ftp? Well, main reason - more correct headers for sequences inside
-  time blastdbcmd -db nr_v5 -dbtype prot -entry all -outfmt "%f" -out - | pigz -c > nr.fa.gz
+  # strange step, converting nr to fasta. Why do not use FASTA from NCBI ftp? 
+  # Well, main reason - more correct headers for sequences inside
+  blastdbcmd -db nr_v5 -dbtype prot -entry all -outfmt "%f" -out - | pigz -c > nr.fa.gz
   
   ## download and extract accession numbers which associated with vertebrates
   wget -c ftp://ftp.ncbi.nih.gov/pub/taxonomy/accession2taxid/prot.accession2taxid.gz
@@ -100,17 +101,26 @@ This document provides some notes about how I obtain tables and create figures f
     
   #+END_SRC
   
-  - Convert FASTA: header[org1][org2]seq --> header[org1]seq\nheader[org2]seq
+  - Split FASTA headers to form as one organism - one sequence
+    (header[org1][org2]seq ==> header[org1]seq header[org2]seq)
   #+BEGIN_SRC shell
-  time cat <(echo) <(pigz -dc nr.fa.gz) \
+  cat <(echo) <(pigz -dc nr.fa.gz) \
       | perl -e 'BEGIN{ $/ = "\n>"; <>; } while(<>){s/>$//;  $i = index $_, "\n"; $h = substr $_, 0, $i; $s = substr $_, $i+1; if ($h !~ />/) { print ">$_"; next; }; $h = ">$h"; while($h =~ />([^ ]+ .+?) ?(?=>|$)/g){ $h1 = $1; $h1 =~ s/^\W+//; print ">$h1\n$s";} } ' \
-  | seqkit grep --delete-matched -f 7742.acc -o nr.7742.fa.gz
+      | seqkit grep --delete-matched -f 7742.acc -o nr.7742.fa.gz
 
   #+END_SRC
 
   - Create final BLAST db which contains only vertebrates
   #+BEGIN_SRC shell
   pigz -dc nr.7742.fa.gz > nr.7742.fa
-  time makeblastdb -parse_seqids -in nr.7742.fa -dbtype prot -out nr.7742 -max_file_sz 3000000000
+  makeblastdb -parse_seqids -in nr.7742.fa -dbtype prot -out nr.7742 -max_file_sz 3000000000
   rm nr.7742.fa
+  #+END_SRC
+  
+  On this step we have prepared BLAST DB which contains only Verterbrates and we can check it:
+
+  #+BEGIN_SRC shell
+  # test.sites contains some FASTA sequnces
+  export BLASTDB=`pwd`
+  time blastp -db nr.7742 -query ./test.sites -outfmt "6 qaccver saccver stitle evalue score pident qseq sseq" -out test10-1.tsv -num_alignments 8000 -num_threads 8 -evalue 1e-16
   #+END_SRC
