@@ -135,7 +135,7 @@ This document provides some notes about how I obtain tables and create figures f
 
 ** Processing part 
    - *Note*: I heavily used the [[https://www.tidyverse.org/][Tidyverse]] libraries in this study!
-   - *Note*: All next work will produced in directory _caspases_ which you can obtain using this command:
+   - *Note*: All next work will produced in directory *caspases* which you can obtain using this command:
 
 #+BEGIN_SRC shell
   git clone https://github.com/mpyatkov/caspases.git
