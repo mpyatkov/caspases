@@ -19,19 +19,21 @@ This document provides some notes about how I obtain tables and create figures f
 * Preparing databases and software
 ** Software
 
-   Almost all information was obtained from this [[   https://bioinf.shenwei.me/taxonkit/tutorial/#making-nr-blastdb-for-specific-taxids][source]]
+   Almost all information was obtained from this [[   https://bioinf.shenwei.me/taxonkit/tutorial/#making-nr-blastdb-for-specific-taxids][source]]. I used one directory for soft and databases and for R scripts I used separated  subdirectory *caspases* which just clone of this repository.
    
    Main software which I used:
    - [[https://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/LATEST/ncbi-blast-2.9.0+-x64-linux.tar.gz][NCBI BLAST+]]
    - [[https://github.com/shenwei356/csvtk/releases/download/v0.18.2/csvtk_linux_amd64.tar.gz][CSVTK]]
    - [[https://github.com/shenwei356/seqkit/releases/download/v0.10.2/seqkit_linux_amd64.tar.gz][SEQKIT]]
    - pigz was installed using apt
-   - all soft have links in ~/bin
+   - all soft have links in *~/bin*
 
 ** Download and prepare NR database, obtain subset of Vertebrates
-  - Download last NR (non-redundant) database (not in one FASTA file, because headers don't presented very well in FASTA)
+  - Download last NR (non-redundant) database (not in one FASTA file, because headers don't presented very well in FASTA).
 
 #+BEGIN_SRC shell
+  mkdir calculations
+  cd calculations
   wget -c 'https://ftp.ncbi.nlm.nih.gov/blast/db/v5/nr_v5.*.tar.gz'
 #+END_SRC
 
@@ -53,10 +55,10 @@ This document provides some notes about how I obtain tables and create figures f
   ln -s `realpath ./taxdump/names.dmp` ~/.taxonkit/names.dmp
   ln -s `realpath ./taxdump/nodes.dmp` ~/.taxonkit/nodes.dmp
   ln -s `realpath ./taxdump/delnodes.dmp` ~/.taxonkit/delnodes.dmp
-  taxonkit list --ids 7742 --indent "" > 7742.txt
+  taxonkit list --ids 7742 --indent "" > 7742.txid
 #+END_SRC
 
-  But I used [[https://www.ncbi.nlm.nih.gov/books/NBK179288/][entrez]] which in my case is slightly faster:
+  or You can use [[https://www.ncbi.nlm.nih.gov/books/NBK179288/][entrez]] which in my case is slightly faster:
 
 #+BEGIN_SRC shell
   # install entrez for get_species_taxids.sh
@@ -132,26 +134,33 @@ This document provides some notes about how I obtain tables and create figures f
   #+END_SRC
 
 ** Processing part 
-   - Note: I heavily used the [[https://www.tidyverse.org/][Tidyverse]] libraries in this study!
+   - *Note*: I heavily used the [[https://www.tidyverse.org/][Tidyverse]] libraries in this study!
+   - *Note*: All next work will produced in directory _caspases_ which you can obtain using this command:
+
+#+BEGIN_SRC shell
+  git clone https://github.com/mpyatkov/caspases.git
+  cd caspases
+#+END_SRC     
 
    - *$FASTAFILE* - file obtained from TABLE## using script *000-extractPep.R*. The real name of *$FASTAFILE* will be in form *run[current_date]_1*. (Ex. run15112019_1)
 
 #+BEGIN_SRC shell
-  
   Rscript --vanilla 000-extractPep.R TABLE##
-
 #+END_SRC
 
-   - Obtaining required tables
- 
-#+BEGIN_SRC shell 
-  #!/bin/bash
+   - Getting the required base tables.
 
+#+BEGIN_SRC shell
+  sh processing.sh run######_1
+#+END_SRC     
+ 
+#+BEGIN_SRC shell :tangle processing.sh :exports "none"
+  #!/bin/bash
   # processing.sh
   # run: sh ./processing.sh ./FASTAFILE
 
   FASTAFILE=$1
-  export BLASTDB=`pwd`
+  export BLASTDB=..`pwd`
 
   # 1. Extract all potential orthologs for vertebrates
   # ~ 3-4 hours depending on hardware
@@ -169,9 +178,9 @@ This document provides some notes about how I obtain tables and create figures f
   # 3. The number of sequences associated with each 
   # organism in NR BLAST database (proteom representativeness)
 
-  ## grep -Po '(?<=\[).*(?=\]$)' -- extract  ex. [Homo sapiens]$
-  ## grep -E -v "\.|\[|\]|\,|=|-|\(|\/"  -- parse garbage
-  ## sed -e 's/^ *//;s/ /,/' -- remove spaces which used uniq
+  ## grep -Po '(?<=\[).*(?=\]$)'            -- extract  ex. [Homo sapiens]$
+  ## grep -E -v "\.|\[|\]|\,|=|-|\(|\/"     -- parse garbage
+  ## sed -e 's/^ *//;s/ /,/'                -- remove spaces which used uniq
   ## grep -f $FASTAFILE_TABLE_UNIQ_ORGS.csv -- get organisms from file
 
   cat nr.7742.fa | grep ">" | grep -Po '(?<=\[).*(?=\]$)' \
@@ -181,7 +190,7 @@ This document provides some notes about how I obtain tables and create figures f
              > "$FASTAFILE"_TABLE_ORG_PROT_COUNT.csv
 #+END_SRC
 
-   - Lineages for each organims was mainly obtained using Taxonkit, but because classification missing particular Classes, Orders, etc. I fill the empty values using other online servers (Wikipedia, ebi.uk, etc).
+   - (*OPTIONAL STEP*) Lineages for each organims was mainly obtained using Taxonkit, but because classification missing particular Classes, Orders, etc. I fill the empty values using other online servers (Wikipedia, ebi.uk, etc). Full table of lineages for species *./caspases/TABLES/Basic_lineages.csv*
 
 #+BEGIN_SRC shell
   cat "$FASTAFILE"_TABLE_UNIQ_ORGS.csv \
@@ -197,3 +206,7 @@ As output of server part we need take 3 tables:
    - $FASTAFILE_TABLE_UNIQ_ORGS.csv - table contains information about uniq organism, this table required only on previous step and can be obtained from "short" one at any moment.
 
 
+** Local vars
+   ;; Local Variables:
+   ;; eval: (add-hook 'after-save-hook (lambda ()(org-babel-tangle)) nil t)
+   ;; End:
