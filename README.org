@@ -206,7 +206,7 @@ As output of server part we need take 3 tables:
    - $FASTAFILE_TABLE_UNIQ_ORGS.csv - table contains information about uniq organism, this table required only on previous step and can be obtained from "short" one at any moment.
 
 
-** Local vars
+* COMMENT Local vars :noexport:
    ;; Local Variables:
    ;; eval: (add-hook 'after-save-hook (lambda ()(org-babel-tangle)) nil t)
    ;; End:
