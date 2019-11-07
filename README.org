@@ -16,10 +16,13 @@ This document provides some notes about how I obtain tables and create figures f
 #+OPTIONS:   toc:2
 #+OPTIONS:   p:t
 
+* COMMENT VARS :noexport:
+#+MACRO: table_with_sites TABLE###
+
 * Preparing databases and software
 ** Software
 
-   Almost all information was obtained from this [[   https://bioinf.shenwei.me/taxonkit/tutorial/#making-nr-blastdb-for-specific-taxids][source]]. I used one directory for soft and databases and for R scripts I used separated  subdirectory *caspases* which just clone of this repository.
+   Almost all information was obtained from this [[https://bioinf.shenwei.me/taxonkit/tutorial/#making-nr-blastdb-for-specific-taxids][source]]. I used one directory for soft and databases and for R scripts I used separated  subdirectory *caspases* which just clone of this repository.
    
    Main software which I used:
    - [[https://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/LATEST/ncbi-blast-2.9.0+-x64-linux.tar.gz][NCBI BLAST+]]
@@ -58,7 +61,7 @@ This document provides some notes about how I obtain tables and create figures f
   taxonkit list --ids 7742 --indent "" > 7742.txid
 #+END_SRC
 
-  or You can use [[https://www.ncbi.nlm.nih.gov/books/NBK179288/][entrez]] which in my case is slightly faster:
+  or you can use [[https://www.ncbi.nlm.nih.gov/books/NBK179288/][entrez]] which in my case is slightly faster:
 
 #+BEGIN_SRC shell
   # install entrez for get_species_taxids.sh
@@ -135,17 +138,17 @@ This document provides some notes about how I obtain tables and create figures f
 
 ** Processing part 
    - *Note*: I heavily used the [[https://www.tidyverse.org/][Tidyverse]] libraries in this study!
-   - *Note*: All next work will produced in directory *caspases* which you can obtain using this command:
+   - *Note*: All next work will produced in directory *caspases* which you can obtain using command:
 
 #+BEGIN_SRC shell
   git clone https://github.com/mpyatkov/caspases.git
   cd caspases
 #+END_SRC     
 
-   - *$FASTAFILE* - file obtained from TABLE## using script *000-extractPep.R*. The real name of *$FASTAFILE* will be in form *run[current_date]_1*. (Ex. run15112019_1)
+   - *SITES_60AA_FASTA.txt* - file obtained from #TABLE_S1# using script *000-extractPep.R*.
 
 #+BEGIN_SRC shell
-  Rscript --vanilla 000-extractPep.R TABLE##
+  Rscript --vanilla 000-extractPep.R #TABLE_S1#
 #+END_SRC
 
    - Getting the required base tables.
@@ -160,6 +163,7 @@ This document provides some notes about how I obtain tables and create figures f
   # run: sh ./processing.sh ./FASTAFILE
 
   FASTAFILE=$1
+  OUTFILE="SITES_60AA"
   export BLASTDB=..`pwd`
 
   # 1. Extract all potential orthologs for vertebrates
@@ -167,13 +171,13 @@ This document provides some notes about how I obtain tables and create figures f
 
   blastp -db nr.7742 -query $FASTAFILE \
          -outfmt "6 qaccver saccver stitle evalue score pident qseq sseq" \
-         -out $FASTAFILE.tsv -num_alignments 8000 \
+         -out $OUTFILE.tsv -num_alignments 8000 \
          -num_threads 8 -evalue 1e-16
 
   # 2. Filtering table FASTAFILE.tsv, removing duplicates
   # output: $FASTAFILE_TABLE_UNIQ_ORGS.csv  -- list of unique organisms
   # output: $FASTAFILE_1_SHORT.csv.gz       -- cleaned FASTAFILE.tsv table 
-  Rscript --vanilla 00-remote-getshort.R $FASTAFILE.tsv
+  Rscript --vanilla 00-remote-getshort.R $OUTFILE.tsv
 
   # 3. The number of sequences associated with each 
   # organism in NR BLAST database (proteom representativeness)
@@ -181,30 +185,54 @@ This document provides some notes about how I obtain tables and create figures f
   ## grep -Po '(?<=\[).*(?=\]$)'            -- extract  ex. [Homo sapiens]$
   ## grep -E -v "\.|\[|\]|\,|=|-|\(|\/"     -- parse garbage
   ## sed -e 's/^ *//;s/ /,/'                -- remove spaces which used uniq
-  ## grep -f $FASTAFILE_TABLE_UNIQ_ORGS.csv -- get organisms from file
+  ## grep -f $OUTFILE_TABLE_UNIQ_ORGS.csv -- get organisms from file
 
   cat nr.7742.fa | grep ">" | grep -Po '(?<=\[).*(?=\]$)' \
       | cut -d" " -f1,2 | sort | uniq -c | sort -n \
       | grep -E -v "\.|\[|\]|\,|=|-|\(|\/"  | sed -e 's/^ *//;s/ /,/' \
-      | grep -f "$FASTAFILE"_TABLE_UNIQ_ORGS.csv \
-             > "$FASTAFILE"_TABLE_ORG_PROT_COUNT.csv
+      | grep -f "$OUTFILE"_TABLE_UNIQ_ORGS.csv \
+        > "$OUTFILE"_TABLE_ORG_PROT_COUNT.csv
 #+END_SRC
 
-   - (*OPTIONAL STEP*) Lineages for each organims was mainly obtained using Taxonkit, but because classification missing particular Classes, Orders, etc. I fill the empty values using other online servers (Wikipedia, ebi.uk, etc). Full table of lineages for species *./caspases/TABLES/Basic_lineages.csv*
+   - (*OPTIONAL STEP*) Lineages for each organims was mainly obtained using Taxonkit, but because classification missing particular Classes, Orders, etc. I fill the empty values using other online servers (Wikipedia, ebi.uk, etc). Full table of lineages for species located here: *./caspases/TABLES/Basic_lineages.csv*
 
 #+BEGIN_SRC shell
-  cat "$FASTAFILE"_TABLE_UNIQ_ORGS.csv \
+  cat SITES_60AA_TABLE_UNIQ_ORGS.csv \
       | taxonkit name2taxid -j 8 \
       | cut -f 2 | taxonkit lineage -j 8 \
       | taxonkit reformat -f "{c};{o};{f};{g};{s}" --miss-rank-repl "__" \
-      | cut -f 3 > "$FASTAFILE"_TABLE_SHORT_LINEAGES_TAXONKIT.tsv
+      | cut -f 3 > SITES_60AA_TABLE_SHORT_LINEAGES_TAXONKIT.tsv
 #+END_SRC
 
 As output of server part we need take 3 tables:
-   - $FASTAFILE_SHORT.csv.gz - "short" table contains filter version of big table obtained from BLAST (run######_1.tsv)
-   - $FASTAFILE_TABLE_ORG_PROT_COUNT.csv - table contains count of proteins for each organism
-   - $FASTAFILE_TABLE_UNIQ_ORGS.csv - table contains information about uniq organism, this table required only on previous step and can be obtained from "short" one at any moment.
+   - *SITES_60AA_SHORT.csv.gz* - "short" table contains filter version of big table obtained from BLAST (run######_1.tsv)
+   - *SITES_60AA_TABLE_ORG_PROT_COUNT.csv* - table contains count of proteins for each organism
+   - *SITES_60AA_TABLE_UNIQ_ORGS.csv* - table contains information about uniq organism, this table required only on previous step and can be obtained from "short" one at any moment.
 
+** Obtaining all requred figures and tables
+   All figures and tables will be located in the directories FIGURES and TABLES respectively. Detailed description for each step is described inside the files.
+
+#+BEGIN_SRC shell
+  # Get table of representative organisms
+  Rscript --vanilla 01-...R
+  # 
+  Rscript --vanilla 02-...R
+  Rscript --vanilla 03-...R
+  Rscript --vanilla 04-...R
+  Rscript --vanilla 05-...R
+
+  # 01-GET_REPR_TABLE.R
+  # 02-COMPARE_8_60.R
+  # 02-PHYLO_CLUSTER.R
+  # 02-REMOTE_CLUSTERING.R
+  # 03-PCA.R
+  # 04-AUX_TABLES.R
+  # 05-HSEQ_ALIGN.R
+  # 06-DOMAIN_STRUCTURE.R
+  # 06-table_of_hydrophilic.R
+  # 061-ADDITIONAL_DOMAINS.R
+  # 07-NRULE.R
+#+END_SRC
 
 * COMMENT Local vars :noexport:
    ;; Local Variables:
