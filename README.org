@@ -145,7 +145,7 @@ This document provides some notes about how I obtain tables and create figures f
   cd caspases
 #+END_SRC     
 
-   - *SITES_60AA_FASTA.txt* - file obtained from #TABLE_S1# using script *000-extractPep.R*.
+   - *SITES_60AA.txt* - file obtained from #TABLE_S1# using script *000-extractPep.R*.
 
 #+BEGIN_SRC shell
   Rscript --vanilla 000-extractPep.R #TABLE_S1#
@@ -213,25 +213,60 @@ As output of server part we need take 3 tables:
    All figures and tables will be located in the directories FIGURES and TABLES respectively. Detailed description for each step is described inside the files.
 
 #+BEGIN_SRC shell
-  # Get table of representative organisms
-  Rscript --vanilla 01-...R
-  # 
-  Rscript --vanilla 02-...R
-  Rscript --vanilla 03-...R
-  Rscript --vanilla 04-...R
-  Rscript --vanilla 05-...R
+  # Additional routines:
 
-  # 01-GET_REPR_TABLE.R
-  # 02-COMPARE_8_60.R
-  # 02-PHYLO_CLUSTER.R
-  # 02-REMOTE_CLUSTERING.R
-  # 03-PCA.R
-  # 04-AUX_TABLES.R
-  # 05-HSEQ_ALIGN.R
-  # 06-DOMAIN_STRUCTURE.R
-  # 06-table_of_hydrophilic.R
-  # 061-ADDITIONAL_DOMAINS.R
-  # 07-NRULE.R
+  # Extract 60AA peptide from protein sequence
+  000-extractPep.R
+  # Uniprot extracting routines
+  00-2019-uni-fasta.R
+
+  # Correction of path resulting files
+  # csv -> TABLES, png/pdf -> FIGURES
+  00-file_path.R
+
+  # Detecting site in orthologous sequence
+  # Inexact hamming distance routines
+  00-octet.R
+
+  # Get lineages from various sources ritis, wikipedia,...
+  00-2019-get-lineage.R
+
+  # filter BLAST output (big table) and represent as short table,
+  # without duplicates and other stuff
+  00-remote-getshort.R
+
+  # Main pipeline includes a lot of steps provide a lot of tables.
+  # Some of steps consume large amount of time, because related with
+  # online services. As example of such service is MUFOLD - online service
+  # which predict secondary structure for peptide. Due to limitations all
+  # calculations was made 2 days. All details are presented as commentary in
+  # source files or placed in paper. But in any case, the speed of calculations
+  # will depend only on what hardware you have.
+
+  # Get table of representative organisms (fast)
+  Rscript --vanilla 01-get-repr-table.R
+
+  # Making multiple alignment (~ 1hour)
+  Rscript --vanilla 021-get-60AA-alignment.R
+
+  # Making distance matrice for organisms (~ 1 hour)
+  Rscript --vanilla 022-get-distance.R
+
+  # Making clustering plot and PCOA plot (fast)
+  Rscript --vanilla 023-plot-PCOA-and-clustering.R
+
+  # Auxilary tables with different statistics (fast)
+  Rscript --vanilla 03-auxilary_tables.R
+
+  # Calculations related with N-rule (fast)
+  Rscript --vanilla 04-nrule.R
+
+  # Predicting secondary structure for human 60AA (~ 2 days)
+  Rscript --vanilla 051-domain_structure.R
+
+  # Add info about hydrophobity to domain structure 
+  Rscript --vanilla 052-hydrophobity_and_loop.R
+
 #+END_SRC
 
 * COMMENT Local vars :noexport:
