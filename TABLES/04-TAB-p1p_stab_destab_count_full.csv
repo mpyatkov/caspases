@@ -1,0 +1,13 @@
+status,count
+cond_destab -> cond_destab,18099
+cond_destab -> destab,10896
+stab -> cond_destab,7534
+cond_destab -> stab,6867
+stab -> destab,5437
+destab -> destab,4812
+destab -> cond_destab,3366
+destab -> stab,484
+cond_destab -> NA,434
+stab -> NA,281
+stab -> stab,236
+destab -> NA,113
