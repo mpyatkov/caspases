@@ -1,5 +1,6 @@
 ## Aux. tables
 source("00-file_path.R")
+setwd("../to_github/")
 
 require(tidyverse)
 
@@ -139,3 +140,41 @@ spece <- strict_e %>%
   summarise(count = n()) %>%
   arrange(desc(count)) %>% 
   write_excel_csv(pp("03-TAB-Species_E.csv"))
+
+# How conservative proteins and sites in relation Class column
+# uni,fullpep
+
+uni_fullpep_classes <-repr %>%
+  filter(found_type == 2) %>%
+  select(uni, fullpep, pname, Class) %>%
+  group_by_all() %>% 
+  summarise(point = 1) %>% 
+  group_by(uni, fullpep) %>%
+  mutate(maxindex=n()) %>% 
+  tidyr::spread(Class,point) %>%
+  arrange(desc(maxindex)) %>%   
+  write_csv(pp("03-TAB-uni_fullpep_vs_class.csv"))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
