@@ -268,7 +268,7 @@ As output of server part we need take 3 tables:
 
 #+END_SRC
 
-** Tesaurus for "repr" table
+** Thesaurus for "repr" table
 
 | column name         | description                                                                                                                          |
 |---------------------+--------------------------------------------------------------------------------------------------------------------------------------|
