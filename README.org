@@ -5,8 +5,6 @@ This document provides some notes about how I obtain tables and create figures f
 
 #+EMAIL:     test@test.com
 
-#+DESCRIPTION: This document catalogs a set of tips and tricks for composing documents in Org mode.
-
 #+DESCRIPTION: This document catalogs a set of scripts which allow to everyone reproduce this research
 
 #+KEYWORDS:  caspases, n-rule, cleavage sites, apoptosis
@@ -15,6 +13,7 @@ This document provides some notes about how I obtain tables and create figures f
 #+OPTIONS:   num:nil
 #+OPTIONS:   toc:2
 #+OPTIONS:   p:t
+#+OPTIONS: author:nil date:nil
 
 * COMMENT VARS :noexport:
 #+MACRO: table_with_sites TABLE###
@@ -268,6 +267,43 @@ As output of server part we need take 3 tables:
   Rscript --vanilla 052-hydrophobity_and_loop.R
 
 #+END_SRC
+
+** Tesaurus for "repr" table
+
+| column name         | description                                                                                                                          |
+|---------------------+--------------------------------------------------------------------------------------------------------------------------------------|
+| uni                 | Human Uniprot ID                                                                                                                     |
+| pname               | Human gene symbol (Uniprot)                                                                                                          |
+| gname               | Human proteine symbol (Uniprot)                                                                                                      |
+| title               | Vertebrate gene name                                                                                                                |
+| accesion            | Accession number of the vertebrate protein sequence                                                                                 |
+| Class               | Class                                                                                                                                |
+| Order               | Order                                                                                                                                |
+| Family              | Family                                                                                                                               |
+| Genus               | Genus                                                                                                                                |
+| org                 | Species                                                                                                                              |
+| count               | Number of vertebrate caspase targets in a species’s proteome                                                                        |
+| totprot             | Total number of proteins in species’s proteome                                                                                       |
+| qseq                | Human 60 amino acid query sequence                                                                                                   |
+| hseq                | Vertebrate 60 amino acid sequence                                                                                                   |
+| evalue              | pBLAST e-value for the vertebrate 60 amino acid sequence                                                                            |
+| score               | pBLAST score for the vertebrate 60 amino acid sequence                                                                              |
+| identity            | pBLAST identity for the vertebrate 60 amino acid sequence                                                                           |
+| fullpep             | Human cleavage site                                                                                                                  |
+| octet               | Vertebrate cleavage site                                                                                                            |
+| found               | Vertebrate P1 amino acid                                                                                                            |
+| found_type          | Vertebrate P1 amino acid – numerical. 1 — D, 0 — not D                                                                              |
+| hamdist             | Hamming distance estimate between human and vertebrate cleavage sites                                                               |
+| fullpep_nrule_amino | P1’ amino acid in human cleavage site                                                                                                |
+| fullpep_stype       | Effect of P1’ amino acid in human cleavage site                                                                                      |
+| fullpep_ntype       | Effect of P1’ amino acid in human celavage site – numerical. 2 — stab, 1 — cond destab, 0 — destab                                   |
+| octet_nrule_amino   | P1’ amino acid in vertebrate cleavage site                                                                                          |
+| octet_stype         | Effect of P1’ amino acid in vertebrate cleavage site                                                                                |
+| octet_ntype         | Effect of P1’ amino acid in vertebrate cleavage site – numerical. 2 — stab, 1 — cond destab, 0 — destab                             |
+| centerh             | Sum of hydrophobicity estimates for the central 20 amino acids in vertebrate 60 amino acid sequences                                |
+| shifted_center      | Sum of hydrophobicity estimates for the central 20 amino acids  in vertebrate 60 amino acid sequences shifted to all-positive scale |
+| Oest                | Hydrophobicity prevalence values in vertebrate 60 amino acid sequences                                                              |
+
 
 * COMMENT Local vars :noexport:
    ;; Local Variables:

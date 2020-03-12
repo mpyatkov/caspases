@@ -10,9 +10,9 @@ library(tidyverse)
 
 repr <- read_rds("./01-5-repr.rds")
 
-repr_test <- repr %>%
-  filter(grepl("CALU", pname),fullpep == "YSHDGNTD") %>%
-  mutate(hseq=str_replace_all(hseq, '-',""))
+# repr_test <- repr %>%
+#   filter(grepl("CALU", pname),fullpep == "YSHDGNTD") %>%
+#   mutate(hseq=str_replace_all(hseq, '-',""))
 
 ## same for map_df functions
 align_dataframe_map <- function(uni, fullpep, vorgs, vhseq) {

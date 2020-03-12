@@ -1,11 +1,16 @@
 require(tidyverse)
 library(dendextend)
+library(gridExtra)
+library(grid)
 source("./00-file_path.R")
 
 repr <- read_rds("01-5-repr.rds")
 
 hm60 <- read_csv(pp("022-TAB-distance_bw_orgs_60AA.csv")) 
 hm8 <- read_csv(pp("022-TAB-distance_bw_orgs_8AA.csv")) 
+
+hm1 <- hm8 %>% 
+  select(org1 = org2, org2 = org1, dst)
 
 ## for simmetric dist matrix we append all pairs of organisms (org1,org2) == (org2,org1)
 get_hc_dist <- function(hm) {
@@ -70,11 +75,14 @@ distance_plot <- function(hm_dist, legend = T){
   p
 }
 
-r60 <- get_hc_dist(hm60$dist)
-r8 <- get_hc_dist(hm8$dist)
+r60 <- get_hc_dist(hm60)
+r8 <- get_hc_dist(hm8)
 
-p60 <- distance_plot(r60) 
-p8 <- distance_plot(r8)#+ theme(legend.position = "none")
+# r60 <- get_hc_dist(hm60$dist)
+# r8 <- get_hc_dist(hm8$dist)
+
+p60 <- distance_plot(r60$dist) 
+p8 <- distance_plot(r8$dist)#+ theme(legend.position = "none")
 
 # print(p8)
 # print(p60)
@@ -136,7 +144,22 @@ dendro_plot <- function(hc, fname) {
   # lins, colors
   rr <- tibble(lins = linss, colors = colors) %>% 
     left_join(tibble(lins=lins), y = .)
+
+  # get orders from repr
+  orders <- repr %>%
+    select(Order) %>%
+    distinct() %>%
+    mutate(order_number = row_number()) %>%
+    left_join(repr %>% select(org, Order) %>% distinct(), y = .) 
+
+  # Change labels to new one
+  new_labels <- tibble(org = hc$labels) %>% 
+    left_join(., orders) %>% 
+    mutate(new_label = paste0(org, " ", order_number)) %>% 
+    pull(new_label)
   
+  hc$labels <- new_labels
+
   dend <- hc %>% 
     as.dendrogram %>% 
     set("branches_lwd", 0.5) %>% 
@@ -147,12 +170,14 @@ dendro_plot <- function(hc, fname) {
     set("leaves_col",rr$colors)
   
   ggd1 <- as.ggdend(dend)
-  
   ggplot(ggd1, horiz = TRUE, labels = F) + #, labels = TRUE, offset_labels = -0.01)
     geom_text(data = ggd1$labels, aes(x, -0.02, label = label), hjust = 0, size = 2) +
     scale_y_reverse(expand = c(1, -1)) +
     ggsave(fname, dpi = 300,width = 8.27, height = 25.69, units = "in") 
+  1
 }
+
+# dendro_plot(r60$hc, pp("TMP60.pdf"))
 
 dendro_plot(r60$hc, pp("023-FIG-clustering_tree-60AA.png"))
 dendro_plot(r8$hc, pp("023-FIG-clustering_tree-8AA.png"))

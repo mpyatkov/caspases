@@ -130,5 +130,14 @@ finished_prots <- finished_prots %>%
 final_domains <- finished_prots %>% 
   separate(target,c("uni","fullpep","num")) %>%
   select(-num) %>% 
-  write_csv("051-TAB-final-domains.csv")
+  write_csv("051-TAB-final-domains.csv") # must 051-TAB-full_domains.csv
 
+# additional info in final domains
+repr_domains <- read_csv(pp("051-TAB-final-domains.csv")) %>% 
+  inner_join(repr %>% 
+               select(uni, fullpep, qseq,org) %>% 
+               filter(grepl("Homo", org)) %>% 
+               group_by(uni,fullpep) %>% 
+               distinct()) %>%
+  select(-org) %>% 
+  write_csv(pp("051-TAB-repr_domains.csv"))

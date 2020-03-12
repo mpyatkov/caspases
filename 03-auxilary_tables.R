@@ -1,6 +1,5 @@
 ## Aux. tables
 source("00-file_path.R")
-setwd("../to_github/")
 
 require(tidyverse)
 
@@ -62,7 +61,7 @@ procD <- repr %>%
 
 ### uni, fullpep, mean hamming distantce
 meanHD <- repr %>% 
-  filter(!grepl("Homo", org)) %>% 
+  filter(!grepl("Homo", org), found == "D") %>% 
   select(uni,fullpep,hamdist) %>% 
   group_by(uni,fullpep) %>% 
   summarise(meanhd = mean(hamdist), count = n()) %>% 
@@ -106,6 +105,7 @@ ggsave(filename = pp("03-FIG-agard.png"), plot = acp, width = 173, height = 160,
 
 #### TASK: for each uni,fullpep count which max frequent octet_ntype
 max_freq_octet_ntype <- repr %>% 
+  filter(!grepl("Homo",org), found_type == 2) %>% 
   select(uni,fullpep,octet_ntype) %>% 
   group_by_all() %>% 
   summarise(cnt = n()) %>% 
@@ -123,45 +123,45 @@ max_freq_octet_ntype <- repr %>%
 
 # repr <- read_rds("./01-5-repr.rds")
 strict_e <- repr %>%
-  filter(org != "Homo sapiens", found == "E") # hamdist < 3
+  filter(org != "Homo sapiens") # found == "E"
 
 ## Counting frequency of the E-cuts within the vertebrates
 cons <- strict_e %>%
-  select(uni, fullpep, pname) %>%
-  group_by_all() %>%
-  summarise(count = n()) %>%
-  arrange(desc(count)) %>% 
+  select(Class, found, org) %>%
+  group_by_all() %>% 
+  mutate(Ecount = ifelse(found == "E",1,0)) %>% 
+  ungroup() %>% 
+  group_by(org,Class) %>%
+  summarise(total = n(), E = sum(Ecount), ratio=round(E/total,2)) %>% 
   write_excel_csv(pp("03-TAB-Strict_conservation_range_E.csv"))
 
-## Counting frequency of e-cuts within species to see trends in D->E substitutions
-spece <- strict_e %>%
-  select(uni, fullpep, pname, org) %>%
-  group_by(org) %>%
-  summarise(count = n()) %>%
-  arrange(desc(count)) %>% 
-  write_excel_csv(pp("03-TAB-Species_E.csv"))
+png(filename = pp("03-FIG-boxplot_E_by_Species.png"), width = 800, height = 600)
+boxplot(ratio ~ Class, data= cons)
+dev.off()
 
 # How conservative proteins and sites in relation Class column
 # uni,fullpep
 
 uni_fullpep_classes <-repr %>%
-  filter(found_type == 2) %>%
+  filter(!grepl("Homo",org), found_type == 2) %>%
   select(uni, fullpep, pname, Class) %>%
   group_by_all() %>% 
   summarise(point = 1) %>% 
   group_by(uni, fullpep) %>%
   mutate(maxindex=n()) %>% 
   tidyr::spread(Class,point) %>%
-  arrange(desc(maxindex)) %>%   
+  arrange(desc(maxindex)) %>% 
+  select(uni,fullpep,pname, maxindex, Chondrichthyes, Actinopterygii, Sarcopterygii, Amphibia, Reptilia, Aves, Mammalia) %>% 
   write_csv(pp("03-TAB-uni_fullpep_vs_class.csv"))
 
+## evalue, log10
 
-
-
-
-
-
-
+evalue_uni_fullpep <- repr %>% 
+  filter(!grepl("Homo",org), found_type == 2) %>%
+  select(uni, fullpep, evalue) %>% 
+  group_by(uni,fullpep) %>% 
+  summarise(e_median = median(-log10(evalue))) %>% 
+  write_csv(pp("03-TAB-median_evalue.csv"))
 
 
 
