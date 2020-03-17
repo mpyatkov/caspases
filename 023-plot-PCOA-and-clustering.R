@@ -63,7 +63,7 @@ distance_plot <- function(hm_dist, legend = T){
   print(paste0(ix,iy,ax,ay, sep = ""))
   
   p <- ggplot(mds.data, aes(x = X, y = Y, label=Class)) + 
-    geom_point(aes(colour=Class), size=3)+
+    geom_point(aes(colour=Class), size=2)+
     scale_colour_brewer( type = "qua", palette = 7, direction = 7)+
     xlim(c(-0.55,1.17))+
     ylim(c(-0.55, 0.80))+
@@ -71,7 +71,10 @@ distance_plot <- function(hm_dist, legend = T){
     # ylim(c(iy,ay))+
     xlab(paste("MDS1: ",mds.var[1], "% of variance", sep=""))+
     ylab(paste("MDS2: ",mds.var[2], "% of variance", sep=""))+
-    theme_minimal() 
+    theme_classic() +
+    #theme(legend.key.size = unit(3,"line"))+
+    theme(legend.text=element_text(size=14))
+  
   p
 }
 
@@ -114,8 +117,7 @@ grid_arrange_shared_legend <- function(..., nrow = 1, ncol = length(list(...)), 
   
 }
 
-
-pdf(pp("023-FIG-PCOA.pdf"), width = 5.5, height = 3.7)
+pdf(pp("023-FIG-PCOA.pdf"), width = 11, height = 5)
 grid_arrange_shared_legend(p60,p8,nrow = 1, ncol = 2, position = "right")
 dev.off()
 
@@ -127,7 +129,7 @@ d8 <- as.dendrogram(r8$hc)
 # Baker's Gamma correlation coefficient
 cor_bakers_gamma(d8, d60)
 
-# create dendrogram and make clustering of orgs
+#### create dendrogram and make clustering of orgs
 dendro_plot <- function(hc, fname) {
   
   # list of Classes associated with organism
@@ -155,7 +157,7 @@ dendro_plot <- function(hc, fname) {
   # Change labels to new one
   new_labels <- tibble(org = hc$labels) %>% 
     left_join(., orders) %>% 
-    mutate(new_label = paste0(org, " ", order_number)) %>% 
+    mutate(new_label = paste0(org, " (", Order, ")")) %>% 
     pull(new_label)
   
   hc$labels <- new_labels
@@ -170,15 +172,14 @@ dendro_plot <- function(hc, fname) {
     set("leaves_col",rr$colors)
   
   ggd1 <- as.ggdend(dend)
-  ggplot(ggd1, horiz = TRUE, labels = F) + #, labels = TRUE, offset_labels = -0.01)
+  p <- ggplot(ggd1, horiz = TRUE, labels = F) +
     geom_text(data = ggd1$labels, aes(x, -0.02, label = label), hjust = 0, size = 2) +
-    scale_y_reverse(expand = c(1, -1)) +
-    ggsave(fname, dpi = 300,width = 8.27, height = 25.69, units = "in") 
+    scale_y_reverse(expand = c(1, -1))
+
+  ggsave(fname, plot = p, dpi = 300,width = 8.27, height = 25.69, units = "in")
   1
 }
 
-# dendro_plot(r60$hc, pp("TMP60.pdf"))
-
-dendro_plot(r60$hc, pp("023-FIG-clustering_tree-60AA.png"))
-dendro_plot(r8$hc, pp("023-FIG-clustering_tree-8AA.png"))
+dendro_plot(r60$hc, pp("023-FIG-clustering_tree-60AA.pdf"))
+dendro_plot(r8$hc, pp("023-FIG-clustering_tree-8AA.pdf"))
 

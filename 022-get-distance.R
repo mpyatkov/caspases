@@ -78,8 +78,13 @@ get_distance <- function(oi1, oi2, col) { # col == algn or octet
   seq_len <- 8
   if (col == "algn") {seq_len <- 60 }
 
+  tmp <- list_to_pid_tibble(oi1, oi2)
+  
+  oo1 <- org_vpid_orgid[oi1,]$org
+  oo2 <- org_vpid_orgid[oi2,]$org
+  
   repr %>% 
-    filter(org == o1 | org == o2) %>%
+    filter(org == oo1 | org == oo2) %>%
     inner_join(x = ., y = tmp, by=c("gname", "fullpep")) %>%
     #select(gname, fullpep, octet, org) %>%
     select(gname, fullpep, octet=col, org) %>% 
@@ -97,7 +102,7 @@ get_distance <- function(oi1, oi2, col) { # col == algn or octet
 ## long time operation , comparison all organisms to each other 8AA
 system.time(
   qq <- ex_orgs_dist %>% 
-    sample_n(100) %>% 
+    #sample_n(100) %>% 
     rowwise() %>%
     mutate(dst = get_distance(orgid,orgid1,"octet")) %>%
     arrange(dst) %>%
@@ -115,7 +120,7 @@ repr <- repr %>%
 ## long time operation, comparison all organisms to each other 60AA
 system.time(
   qq <- ex_orgs_dist %>% 
-    sample_n(100) %>% 
+    #sample_n(100) %>% 
     rowwise() %>%
     mutate(dst = get_distance(orgid,orgid1,"algn")) %>% 
     arrange(dst) %>%
