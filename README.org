@@ -1,7 +1,7 @@
-#+TITLE:     Cleavage site searching pipeline
+#+TITLE:     Novel apoptotic mediators identified by conservation of vertebrate caspase targets (pipeline)
 #+AUTHOR:    Max Pyatkov
 
-This document provides some notes about how I obtain tables and create figures for caspase cleavage sites research
+This document provides some notes about processing related with caspase cleavage sites research
 
 #+EMAIL:     test@test.com
 
