@@ -1,7 +1,7 @@
-#+TITLE:     Novel apoptotic mediators identified by conservation of vertebrate caspase targets (pipeline)
+#+TITLE:     Novel apoptotic mediators identified by conservation of vertebrate caspase targets (https://doi.org/10.3390/biom10040612)
 #+AUTHOR:    Max Pyatkov
 
-This document provides some notes about processing related with caspase cleavage sites research
+This document provides a pipeline of data processing for the paper
 
 #+EMAIL:     test@test.com
 
