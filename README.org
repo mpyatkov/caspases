@@ -21,7 +21,7 @@ This document provides a pipeline of data processing for the paper
 * Preparing databases and software
 ** Software
 
-   Almost all information was obtained from this [[https://bioinf.shenwei.me/taxonkit/tutorial/#making-nr-blastdb-for-specific-taxids][source]]. I used one directory for soft and databases and for R scripts I used separated  subdirectory *caspases* which just clone of this repository.
+   Almost all information was obtained from this [[https://bioinf.shenwei.me/taxonkit/tutorial/#making-nr-blastdb-for-specific-taxids][source]]. I used one directory for soft and databases and for R scripts I used separate  subdirectory *caspases* which was just clone of this repository.
    
    Main software which I used:
    - [[https://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/LATEST/ncbi-blast-2.9.0+-x64-linux.tar.gz][NCBI BLAST+]]
@@ -31,7 +31,7 @@ This document provides a pipeline of data processing for the paper
    - all soft have links in *~/bin*
 
 ** Download and prepare NR database, obtain subset of Vertebrates
-  - Download last NR (non-redundant) database (not in one FASTA file, because headers don't presented very well in FASTA).
+  - Download last NR (non-redundant) database as a set of separate FASTA files, because headers are not presented very well in a single combined FASTA file.
 
 #+BEGIN_SRC shell
   mkdir calculations
@@ -46,7 +46,7 @@ This document provides a pipeline of data processing for the paper
 #+END_SRC
 
   - Extracting vertebrates subset
-  Note. Actually you can use taxonkit to extract taxids for example as follows:
+  Note. Actually you can use taxonkit to extract taxon ID (taxids) for example as follows:
 
 #+BEGIN_SRC shell
   mkdir -p ~/.taxonkit
@@ -60,7 +60,7 @@ This document provides a pipeline of data processing for the paper
   taxonkit list --ids 7742 --indent "" > 7742.txid
 #+END_SRC
 
-  or you can use [[https://www.ncbi.nlm.nih.gov/books/NBK179288/][entrez]] which in my case is slightly faster:
+  or use [[https://www.ncbi.nlm.nih.gov/books/NBK179288/][entrez]] which may be slightly faster:
 
 #+BEGIN_SRC shell
   # install entrez for get_species_taxids.sh
@@ -80,7 +80,7 @@ This document provides a pipeline of data processing for the paper
   ./edirect/setup.sh
 #+END_SRC
 
-  - According to this [[https://ftp.ncbi.nlm.nih.gov/blast/db/v5/blastdbv5.pdf][manual]] I extract subset of vertebrates (id: 7742)
+  - Extract subset of vertebrates (id: 7742) according to this [[https://ftp.ncbi.nlm.nih.gov/blast/db/v5/blastdbv5.pdf][manual]] 
   #+BEGIN_SRC shell
   
   # obtain id of vertebrates
@@ -92,6 +92,7 @@ This document provides a pipeline of data processing for the paper
   #+END_SRC  
 
   - Convert prepared database to FASTA subset
+
   #+BEGIN_SRC shell
 
     # strange step, converting nr to fasta. Why do not use FASTA from NCBI ftp? 
@@ -108,16 +109,17 @@ This document provides a pipeline of data processing for the paper
     > 7742.acc
 
   #+END_SRC
-  - Split FASTA headers to form as one organism - one sequence
+
+  - Split FASTA headers to get one sequence for one organism
     (header[org1][org2]seq ==> header[org1]seq header[org2]seq)
+
   #+BEGIN_SRC shell
   cat <(echo) <(pigz -dc nr.fa.gz) \
       | perl -e 'BEGIN{ $/ = "\n>"; <>; } while(<>){s/>$//;  $i = index $_, "\n"; $h = substr $_, 0, $i; $s = substr $_, $i+1; if ($h !~ />/) { print ">$_"; next; }; $h = ">$h"; while($h =~ />([^ ]+ .+?) ?(?=>|$)/g){ $h1 = $1; $h1 =~ s/^\W+//; print ">$h1\n$s";} } ' \
       | seqkit grep --delete-matched -f 7742.acc -o nr.7742.fa.gz
-
   #+END_SRC
 
-  - Create final BLAST db which contains only vertebrates
+  - Create final BLAST database which contains only vertebrates
   #+BEGIN_SRC shell
     pigz -dc nr.7742.fa.gz > nr.7742.fa
 
@@ -136,8 +138,8 @@ This document provides a pipeline of data processing for the paper
   #+END_SRC
 
 ** Processing part 
-   - *Note*: I heavily used the [[https://www.tidyverse.org/][Tidyverse]] libraries in this study!
-   - *Note*: All next work will produced in directory *caspases* which you can obtain using command:
+   - *Note*: I heavily used [[https://www.tidyverse.org/][Tidyverse]] libraries in this study!
+   - *Note*: All further data processing work will be made in the directory *caspases* which you can reach using command:
 
 #+BEGIN_SRC shell
   git clone https://github.com/mpyatkov/caspases.git
@@ -193,7 +195,7 @@ This document provides a pipeline of data processing for the paper
         > "$OUTFILE"_TABLE_ORG_PROT_COUNT.csv
 #+END_SRC
 
-   - (*OPTIONAL STEP*) Lineages for each organims was mainly obtained using Taxonkit, but because classification missing particular Classes, Orders, etc. I fill the empty values using other online servers (Wikipedia, ebi.uk, etc). Full table of lineages for species located here: *./caspases/TABLES/Basic_lineages.csv*
+   - (*OPTIONAL STEP*) Lineages for each organism were mainly obtained using Taxonkit, but because missed particular Classes, Orders, etc. I filled the empty values using other online sources (Wikipedia, Fishbase, EMBL-EBI, etc). Full table of lineages for species is located here: *./caspases/TABLES/Basic_lineages.csv*
 
 #+BEGIN_SRC shell
   cat SITES_60AA_TABLE_UNIQ_ORGS.csv \
@@ -204,67 +206,67 @@ This document provides a pipeline of data processing for the paper
 #+END_SRC
 
 As output of server part we need take 3 tables:
-   - *SITES_60AA_SHORT.csv.gz* - "short" table contains filter version of big table obtained from BLAST (run######_1.tsv)
+   - *SITES_60AA_SHORT.csv.gz* - "short" table contains filtered version of big table obtained from BLAST (run######_1.tsv)
    - *SITES_60AA_TABLE_ORG_PROT_COUNT.csv* - table contains count of proteins for each organism
-   - *SITES_60AA_TABLE_UNIQ_ORGS.csv* - table contains information about uniq organism, this table required only on previous step and can be obtained from "short" one at any moment.
+   - *SITES_60AA_TABLE_UNIQ_ORGS.csv* - table contains information about unique organism, this table was required only at previous step and can be obtained from "short" table at any moment.
 
 ** Obtaining all requred figures and tables
-   All figures and tables will be located in the directories FIGURES and TABLES respectively. Detailed description for each step is described inside the files.
+   Figures and tables will be located in the directories FIGURES and TABLES respectively. Detailed description for each step is given inside the files.
 
 #+BEGIN_SRC shell
-  # Additional routines:
+# Additional routines:
 
-  # Extract 60AA peptide from protein sequence
-  000-extractPep.R
-  # Uniprot extracting routines
-  00-2019-uni-fasta.R
+# Extract 60AA peptide from protein sequence
+000-extractPep.R
+# Uniprot extracting routines
+00-2019-uni-fasta.R
 
-  # Correction of path resulting files
-  # csv -> TABLES, png/pdf -> FIGURES
-  00-file_path.R
+# Correction of path resulting files
+# csv -> TABLES, png/pdf -> FIGURES
+00-file_path.R
 
-  # Detecting site in orthologous sequence
-  # Inexact hamming distance routines
-  00-octet.R
+# Detecting site in orthologous sequence
+# Inexact hamming distance routines
+00-octet.R
 
-  # Get lineages from various sources ritis, wikipedia,...
-  00-2019-get-lineage.R
+# Get lineages from various sources ritis, wikipedia,...
+00-2019-get-lineage.R
 
-  # filter BLAST output (big table) and represent as short table,
-  # without duplicates and other stuff
-  00-remote-getshort.R
+# filter BLAST output (big table) and represent as short table,
+# without duplicates and other stuff
+00-remote-getshort.R
 
-  # Main pipeline includes a lot of steps provide a lot of tables.
-  # Some of steps consume large amount of time, because related with
-  # online services. As example of such service is MUFOLD - online service
-  # which predict secondary structure for peptide. Due to limitations all
-  # calculations was made 2 days. All details are presented as commentary in
-  # source files or placed in paper. But in any case, the speed of calculations
-  # will depend only on what hardware you have.
+# Main pipeline includes a lot of steps provide a lot of tables.
+# Some of the steps consume large amount of time, because they involved using
+# online services. As an example of such service is MUFOLD - online service
+# which predicts secondary structure for peptide. Due to limitations all
+# calculations was made for 2 days. All details are presented as commentary in
+# source files or are placed in the paper. But in any case, the speed of calculations
+# will depend only on what hardware you have.
 
-  # Get table of representative organisms (fast)
-  Rscript --vanilla 01-get-repr-table.R
+# Get table of representative organisms (fast)
+Rscript --vanilla 01-get-repr-table.R
 
-  # Making multiple alignment (~ 1hour)
-  Rscript --vanilla 021-get-60AA-alignment.R
+# Making multiple alignment (~ 1hour)
+Rscript --vanilla 021-get-60AA-alignment.R
 
-  # Making distance matrice for organisms (~ 1 hour)
-  Rscript --vanilla 022-get-distance.R
+# Making distance matrice for organisms (~ 1 hour)
+Rscript --vanilla 022-get-distance.R
 
-  # Making clustering plot and PCOA plot (fast)
-  Rscript --vanilla 023-plot-PCOA-and-clustering.R
+# Making clustering plot and PCOA plot (fast)
+Rscript --vanilla 023-plot-PCOA-and-clustering.R
 
-  # Auxilary tables with different statistics (fast)
-  Rscript --vanilla 03-auxilary_tables.R
+# Auxiliary tables with different statistics (fast)
+Rscript --vanilla 03-auxilary_tables.R
 
-  # Calculations related with N-rule (fast)
-  Rscript --vanilla 04-nrule.R
+# Calculations related with N-rule (fast)
+Rscript --vanilla 04-nrule.R
 
-  # Predicting secondary structure for human 60AA (~ 2 days)
-  Rscript --vanilla 051-domain_structure.R
+# Predicting secondary structure for human 60AA (~ 2 days)
+Rscript --vanilla 051-domain_structure.R
 
-  # Add info about hydrophobity to domain structure 
-  Rscript --vanilla 052-hydrophobity_and_loop.R
+# Add info about hydrophobity to domain structure 
+Rscript --vanilla 052-hydrophobity_and_loop.R
 
 #+END_SRC
 
@@ -273,10 +275,10 @@ As output of server part we need take 3 tables:
 | column name         | description                                                                                                                          |
 |---------------------+--------------------------------------------------------------------------------------------------------------------------------------|
 | uni                 | Human Uniprot ID                                                                                                                     |
-| pname               | Human gene symbol (Uniprot)                                                                                                          |
-| gname               | Human proteine symbol (Uniprot)                                                                                                      |
+| pname               | Human protein symbol (Uniprot)                                                                                                   |
+| gname               | Human gene symbol (Uniprot)                                                                                                  |
 | title               | Vertebrate gene name                                                                                                                |
-| accesion            | Accession number of the vertebrate protein sequence                                                                                 |
+| accesion            | NCBI accession number of the vertebrate protein sequence                                                                           |
 | Class               | Class                                                                                                                                |
 | Order               | Order                                                                                                                                |
 | Family              | Family                                                                                                                               |
@@ -284,7 +286,7 @@ As output of server part we need take 3 tables:
 | org                 | Species                                                                                                                              |
 | count               | Number of vertebrate caspase targets in a species’s proteome                                                                        |
 | totprot             | Total number of proteins in species’s proteome                                                                                       |
-| qseq                | Human 60 amino acid query sequence                                                                                                   |
+| qseq                | Human 60 amino acid  sequence                                                                                                   |
 | hseq                | Vertebrate 60 amino acid sequence                                                                                                   |
 | evalue              | pBLAST e-value for the vertebrate 60 amino acid sequence                                                                            |
 | score               | pBLAST score for the vertebrate 60 amino acid sequence                                                                              |
